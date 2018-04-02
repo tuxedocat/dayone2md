@@ -1,6 +1,8 @@
 import re
 import json
 from pathlib import Path
+import shutil
+import sys
 import yaml
 import maya
 import click
@@ -49,9 +51,24 @@ class EntryConverter:
         metadata_string = yaml.dump(self.metadata, allow_unicode=True, default_flow_style=False)
         return metadata_string
 
+    def _replace_image_urls(self):
+        image_metadata = self.metadata.get('photos')
+        if image_metadata:
+            id_to_md5 = {d.get('identifier'): d.get('md5') for d in image_metadata}
+            id_to_fileext = {d.get('identifier'): d.get('type') for d in image_metadata}
+            for img_id, md5 in id_to_md5.items():
+                imageurl = re.compile(f'dayone-moment:\/\/{img_id}')
+                if imageurl.search(self.converted) is not None:
+                    self.converted = imageurl.sub(f'photos/{md5}.{id_to_fileext.get(img_id, "jpeg")}', self.converted)
+
     def to_markdown(self, **kwargs) -> Tuple[str, str]:
-        s = f"---\n{self._format_metadata()}\n---\n\n\n{self.text}\n"
-        self.converted = s
+        if self.text.startswith('#'):
+            prefix = ''
+        else:
+            prefix = '# '
+        body = prefix + self.text
+        self.converted = f"---\n{self._format_metadata()}\n---\n\n\n{body}\n"
+        self._replace_image_urls()
         return (self.creation_date, self.converted)
 
 
@@ -69,9 +86,12 @@ class MdWriter:
                 f.write(self.entry)
 
 
-def _prepare_destination(dest: Path) -> None:
+def _prepare_destination(src: Path, dest: Path) -> None:
     dest.mkdir(exist_ok=True, parents=True)
-    (dest / Path('photos')).mkdir(exist_ok=True)
+    try:
+        shutil.copytree(str(src / Path('photos')), str(dest / Path('photos')))
+    except FileExistsError as e:
+        print('"photos" directory exists, skipped copying.', file=sys.stderr)
 
 
 @click.command()
@@ -84,12 +104,16 @@ def dayone2md(jsonpath, destination, overwrite):
     entries = reader.read().entries
 
     if entries is not None:
+        src = Path(jsonpath).parent
         dest = Path(destination)
-        _prepare_destination(dest)
+        _prepare_destination(src, dest)
 
     converted: List[Tuple[str, str]] = []
     for e in entries:
-        converted.append(EntryConverter(entry=e).to_markdown())
+        try:
+            converted.append(EntryConverter(entry=e).to_markdown())
+        except KeyError as ke:
+            print(f"Entry of {e.get('creationDate')} seems to have no body text.", file=sys.stderr)
 
     for _t in converted:
         ts, s = _t
@@ -97,7 +121,8 @@ def dayone2md(jsonpath, destination, overwrite):
         try:
             MdWriter(fn=filename, entry=s).write(force=overwrite)
         except (FileExistsError) as e:
-            print(e)
+            print(e, end='', file=sys.stderr)
+            print(". Use '--overwrite' option if you want to overwrite.", file=sys.stderr)
 
 
 def main():
