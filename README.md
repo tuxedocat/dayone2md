@@ -4,7 +4,7 @@ dayone2md
 This is a simple exporter script for `DayOne.app (Version 2)`.  
 
 Each entry in `journal_name.json` will be exported as *Pandoc Markdown* with DayOne's metadata.  
-The scripts also copies attached photos in `photos` directory to the output directory.
+The script also copies attached photos in `photos` directory to the output directory.
 
 
 Requirements
@@ -21,7 +21,9 @@ Currently, the script runs with Python3.6, and is tested on macOS.
 Install
 --------
 
-Just copy `dayone2md.py` somewhere, or clone this repository.
+If you don't have `pipenv` and Python3.6, setup them by `brew install python3 pipenv` or using other tools.
+
+Just copy `dayone2md.py` to somewhere, or clone this repository.
 
 ```sh
 $ git clone https://github.com/tuxedocat/dayone2md.git
