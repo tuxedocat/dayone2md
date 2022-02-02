@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import re
 import json
 from pathlib import Path
@@ -7,7 +8,6 @@ import sys
 import yaml
 import maya
 import click
-import copy
 from typing import *
 
 
@@ -63,7 +63,7 @@ class EntryConverter:
                 imageurl = re.compile(f"dayone-moment:\/\/{img_id}")
                 if imageurl.search(self.converted) is not None:
                     self.converted = imageurl.sub(
-                        f'photos/{md5}.{id_to_fileext.get(img_id, "jpeg")}',
+                        f'photos/{md5}.{id_to_fileext.get(img_id, "jpeg")}',  # TODO: Better file ext fallback
                         self.converted,
                     )
 
@@ -79,17 +79,19 @@ class EntryConverter:
 
 
 class MdWriter:
-    def __init__(self, fn: Path, entry: Dict[str, Union[Dict, List, Any]]) -> None:
-        self.fn = fn
-        self.entry = entry
+    def __init__(self, dest_dir: Path) -> None:
+        self.dest_dir = dest_dir
 
-    def write(self, force=False) -> None:
-        _fn = self.fn.with_suffix(".md")
+    def write(self, timestamp: str, content: str, force=False) -> None:
+        _fn = self.dest_dir / Path(timestamp).with_suffix(".md")
         if _fn.exists() and not force is True:
             raise FileExistsError(f"File {_fn} exists")
         else:
             with _fn.open("w") as f:
-                f.write(self.entry)
+                f.write(content)
+        # set accessed-time and modified time
+        epoch = maya.parse(timestamp).epoch
+        os.utime(_fn, (epoch, epoch))
 
 
 def _prepare_destination(src: Path, dest: Path) -> None:
@@ -128,9 +130,9 @@ def dayone2md(jsonpath, destination, overwrite):
 
     for _t in converted:
         ts, s = _t
-        filename = dest / Path(ts)
+        mdwriter = MdWriter(dest_dir=dest)
         try:
-            MdWriter(fn=filename, entry=s).write(force=overwrite)
+            mdwriter.write(ts, s, force=overwrite)
         except (FileExistsError) as e:
             print(e, end="", file=sys.stderr)
             print(
