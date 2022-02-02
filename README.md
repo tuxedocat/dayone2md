@@ -10,25 +10,25 @@ The script also copies attached photos in `photos` directory to the output direc
 Requirements
 -------------
 
-Currently, the script runs with Python3.6, and is tested on macOS.
-
-* Python 3.6 or higher.
+* Python 3.7 or higher.
     * You may need Homebrew, Anaconda, or pyenv to use the latest version of python.
 * Python packages
-    * [Pipenv](https://docs.pipenv.org/) for managing dependencies. 
-    * See `Pipfile` for other dependencies.
+    * [poetry](https://github.com/python-poetry/poetry) for managing dependencies. 
+    * See `pyproject.toml` for other dependencies.
+
+> I tested this script with Python 3.9, and is tested on WSL2 env.
 
 Install
 --------
 
-If you don't have `pipenv` and Python3.6, setup them by `brew install python3 pipenv` or using other tools.
+If you don't have `poetry` and Python 3.x, setup them using homebrew by `brew install python3 poetry` or by other tools.
 
 Just copy `dayone2md.py` to somewhere, or clone this repository.
 
 ```sh
 $ git clone https://github.com/tuxedocat/dayone2md.git
 $ cd dayone2md
-$ pipenv install
+$ poetry install
 ```
 
 Usage
@@ -45,8 +45,8 @@ Your journal file should be exported by DayOne.app as 'JSON in Zip' and extracte
 Then run this script from your terminal. 
 
 ```sh
-# Recommended: use pipenv's shell
-$ pipenv shell
+# You may need run this script as
+# poetry run python dayone2md.py 
 
 # Show help (long-form only)
 $ python dayone2md.py --help
