@@ -38,6 +38,7 @@ class DayOneJsonReader:
 
 class EntryConverter:
     def __init__(self, entry: Dict[str, Any]) -> None:
+        entry.pop("richText", None)
         self.metadata = entry
         self.text = self.metadata.pop("text")
         self.converted: Union[str, None] = None
